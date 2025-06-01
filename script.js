@@ -1,5 +1,5 @@
 console.log('Iniciando fetch a /resultados...');
-fetch('https://pollafutbolerabe.onrender.com/resultados')
+fetch('http://127.0.0.1:10000/resultados')
   .then(res => {
     console.log('Respuesta recibida del backend:', res);
     if (!res.ok) {

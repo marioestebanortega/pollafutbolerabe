@@ -1,0 +1,144 @@
+{
+  "get": "fixtures",
+  "parameters": {
+    "id": "12345"
+  },
+  "errors": [],
+  "results": 1,
+  "paging": {
+    "current": 1,
+    "total": 1
+  },
+  "response": [
+    {
+      "fixture": {
+        "id": 12345,
+        "referee": "Wilmar Roldán",
+        "timezone": "America/Bogota",
+        "date": "2025-06-01T00:00:00+00:00",
+        "timestamp": 1717200000,
+        "periods": {
+          "first": 1717200000,
+          "second": 1717203600
+        },
+        "venue": {
+          "id": 456,
+          "name": "Estadio Atanasio Girardot",
+          "city": "Medellin"
+        },
+        "status": {
+          "long": "Match Finished",
+          "short": "FT",
+          "elapsed": 90,
+          "extra": null
+        }
+      },
+      "league": {
+        "id": 789,
+        "name": "Liga BetPlay",
+        "country": "Colombia",
+        "logo": "https://media.api-sports.io/football/leagues/789.png",
+        "season": 2025,
+        "round": "Final"
+      },
+      "teams": {
+        "home": {
+          "id": 1128,
+          "name": "Independiente Medellin",
+          "logo": "https://media.api-sports.io/football/teams/1128.png",
+          "winner": null
+        },
+        "away": {
+          "id": 1138,
+          "name": "America de Cali",
+          "logo": "https://media.api-sports.io/football/teams/1138.png",
+          "winner": null
+        }
+      },
+      "goals": {
+        "home": 1,
+        "away": 1
+      },
+      "score": {
+        "halftime": {
+          "home": 0,
+          "away": 0
+        },
+        "fulltime": {
+          "home": 1,
+          "away": 1
+        },
+        "extratime": {
+          "home": null,
+          "away": null
+        },
+        "penalty": {
+          "home": null,
+          "away": null
+        }
+      },
+      "events": [
+        {
+          "time": {"elapsed": 23, "extra": null},
+          "team": {"id": 1128, "name": "Independiente Medellin", "logo": "https://media.api-sports.io/football/teams/1128.png"},
+          "player": {"id": 1001, "name": "Jugador 1"},
+          "type": "Goal",
+          "detail": "Normal Goal",
+          "comments": null
+        },
+        {
+          "time": {"elapsed": 55, "extra": null},
+          "team": {"id": 1138, "name": "America de Cali", "logo": "https://media.api-sports.io/football/teams/1138.png"},
+          "player": {"id": 1002, "name": "Jugador 2"},
+          "type": "Goal",
+          "detail": "Normal Goal",
+          "comments": null
+        }
+      ],
+      "lineups": [
+        {
+          "team": {"id": 1128, "name": "Independiente Medellin", "logo": "https://media.api-sports.io/football/teams/1128.png"},
+          "coach": {"id": 2001, "name": "Alfredo Arias", "photo": "https://media.api-sports.io/football/coachs/2001.png"},
+          "startXI": [
+            {"player": {"id": 1, "name": "Jugador A", "number": 1, "pos": "G", "grid": "1:1"}},
+            {"player": {"id": 2, "name": "Jugador B", "number": 2, "pos": "D", "grid": "2:1"}}
+          ],
+          "substitutes": [
+            {"player": {"id": 11, "name": "Jugador S1", "number": 11, "pos": "F", "grid": null}}
+          ],
+          "formation": "4-2-3-1"
+        },
+        {
+          "team": {"id": 1138, "name": "America de Cali", "logo": "https://media.api-sports.io/football/teams/1138.png"},
+          "coach": {"id": 2002, "name": "Lucas González", "photo": "https://media.api-sports.io/football/coachs/2002.png"},
+          "startXI": [
+            {"player": {"id": 3, "name": "Jugador C", "number": 3, "pos": "G", "grid": "1:1"}},
+            {"player": {"id": 4, "name": "Jugador D", "number": 4, "pos": "D", "grid": "2:1"}}
+          ],
+          "substitutes": [
+            {"player": {"id": 12, "name": "Jugador S2", "number": 12, "pos": "F", "grid": null}}
+          ],
+          "formation": "4-4-2"
+        }
+      ],
+      "statistics": [
+        {
+          "team": {"id": 1128, "name": "Independiente Medellin", "logo": "https://media.api-sports.io/football/teams/1128.png"},
+          "statistics": [
+            {"type": "Shots on Goal", "value": 4},
+            {"type": "Shots off Goal", "value": 10},
+            {"type": "Total Shots", "value": 20}
+          ]
+        },
+        {
+          "team": {"id": 1138, "name": "America de Cali", "logo": "https://media.api-sports.io/football/teams/1138.png"},
+          "statistics": [
+            {"type": "Shots on Goal", "value": 6},
+            {"type": "Shots off Goal", "value": 5},
+            {"type": "Total Shots", "value": 11}
+          ]
+        }
+      ]
+    }
+  ]
+} 
