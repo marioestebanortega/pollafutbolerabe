@@ -5,6 +5,7 @@ from flask_caching import Cache
 from polla_futbol import PollaFutbol
 from dotenv import load_dotenv
 import json
+from pymongo.server_api import ServerApi
 
 load_dotenv()
 
@@ -18,53 +19,22 @@ api_call_count = 0
 def get_resultados():
     print("[LOG] Refrescando datos de /resultados (no cache)")
     match_id = int(os.getenv('MATCH_ID'))
+    print(f"[LOG] MATCH_ID usado: {match_id}")
     match_data = get_match_data_with_log(match_id)
+    print(f"[LOG] match_data recibido: {match_data}")
     
     if not match_data:
+        print("[LOG] No se pudo obtener la información del partido (match_data es None o vacío)")
         return jsonify({
             "error": "No se pudo obtener la información del partido. Intente nuevamente en unos minutos."
         }), 503
 
-    polla = PollaFutbol()
-    results = polla.process_match(match_id)
-
-    # Si estamos en modo desarrollo y no hay resultados, crear un mock
-    if results is None and os.getenv('develop_mode', 'false').lower() == 'true':
-        print('[LOG] Creando resultados mock para modo desarrollo')
-        results = [
-            {
-                "name": "Usuario 1",
-                "score": 7,
-                "predictions": {
-                    "winner": "local",
-                    "final_score": "2-1",
-                    "first_half": "1-0",
-                    "second_half": "1-1"
-                }
-            },
-            {
-                "name": "Usuario 2",
-                "score": 5,
-                "predictions": {
-                    "winner": "empate",
-                    "final_score": "1-1",
-                    "first_half": "0-0",
-                    "second_half": "1-1"
-                }
-            },
-            {
-                "name": "Usuario 3",
-                "score": 3,
-                "predictions": {
-                    "winner": "visitante",
-                    "final_score": "0-2",
-                    "first_half": "0-1",
-                    "second_half": "0-1"
-                }
-            }
-        ]
+    polla = PollaFutbol(id_polla=int(os.getenv('ID_POLLA', 1)))
+    results = polla.process_match(match_id, match_data=match_data)
+    print(f"[LOG] results calculados: {results}")
 
     if not results:
+        print("[LOG] No se encontraron predicciones para este partido (results es None o vacío)")
         return jsonify({
             "error": "No se encontraron predicciones para este partido."
         }), 404
@@ -121,13 +91,22 @@ def get_resultados():
 def get_match_data_with_log(match_id):
     global api_call_count
     develop_mode = os.getenv('develop_mode', 'false').lower() == 'true'
+    print(f"[LOG] get_match_data_with_log: develop_mode={develop_mode}, match_id={match_id}")
     if develop_mode:
         print('[LOG] MODO DESARROLLO ACTIVADO: Usando mock de la API')
-        with open('ejemplo_api_football.json', 'r') as f:
-            mock_data = json.load(f)
+        try:
+            with open('ejemplo_api_football.json', 'r') as f:
+                mock_data = json.load(f)
+            print(f"[LOG] Archivo ejemplo_api_football.json abierto correctamente")
+        except Exception as e:
+            print(f"[LOG] Error abriendo ejemplo_api_football.json: {e}")
+            return None
         # Tomar el primer elemento de response
         response = mock_data['response'][0]
-        
+        print(f"[LOG] response[0].fixture.id: {response['fixture']['id']}")
+        if response['fixture']['id'] != match_id:
+            print(f"[LOG] El id del partido en el mock ({response['fixture']['id']}) no coincide con el MATCH_ID ({match_id})")
+            return None
         # Adaptar el formato del JSON de ejemplo al formato que espera el código
         adapted_data = {
             'home_team': response['teams']['home']['name'],
@@ -142,6 +121,7 @@ def get_match_data_with_log(match_id):
             'venue': response['fixture']['venue'],
             'status': response['fixture']['status']
         }
+        print(f"[LOG] adapted_data generado: {adapted_data}")
         return adapted_data
     else:
         api_call_count += 1
