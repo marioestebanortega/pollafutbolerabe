@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Resultados de la Polla</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-light">
+  <div class="container py-4">
+    <div class="text-center mb-4">
+      <img id="league-logo" src="" alt="Logo Torneo" style="height:60px;">
+      <h1 id="match-title" class="mt-2"></h1>
+      <div id="estadio-info" class="text-muted"></div>
+      <div id="status-info" class="text-muted"></div>
+    </div>
+    <div class="alert alert-info text-center mb-4" id="info-puntos">
+      <strong>¿Cómo se calculan los puntos?</strong><br>
+      Ganador: <b>3 puntos</b> &nbsp;|&nbsp;
+      Marcador Final: <b>5 puntos</b> &nbsp;|&nbsp;
+      1er Tiempo: <b>2 puntos</b> &nbsp;|&nbsp;
+      2do Tiempo: <b>2 puntos</b>
+    </div>
+    <div class="row justify-content-center mb-4">
+      <div class="col-auto text-center">
+        <img id="home-logo" src="" alt="Local" style="height:80px;">
+        <div id="home-name" class="fw-bold"></div>
+      </div>
+      <div class="col-auto align-self-center text-center">
+        <div id="main-score" class="fw-bold text-primary" style="font-size:2.2rem;"></div>
+
+      </div>
+      <div class="col-auto text-center">
+        <img id="away-logo" src="" alt="Visitante" style="height:80px;">
+        <div id="away-name" class="fw-bold"></div>
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-striped table-hover align-middle" id="resultados-table">
+        <thead class="table-dark">
+          <tr>
+            <th>Posición</th>
+            <th>Nombre</th>
+            <th>Puntaje</th>
+            <th class="text-center">Predicción</th>
+            <th>Ganador</th>
+            <th>Marcador Final</th>
+            <th>1er Tiempo</th>
+            <th>2do Tiempo</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

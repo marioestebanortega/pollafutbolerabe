@@ -18,6 +18,12 @@ def get_resultados():
     print("[LOG] Refrescando datos de /resultados (no cache)")
     match_id = int(os.getenv('MATCH_ID'))
     match_data = get_match_data_with_log(match_id)
+    
+    if not match_data:
+        return jsonify({
+            "error": "No se pudo obtener la información del partido. Intente nuevamente en unos minutos."
+        }), 503
+
     polla = PollaFutbol()
     results = polla.process_match(match_id)
 
@@ -51,7 +57,22 @@ def get_resultados():
 
     response_data = {
         "equipos": equipos,
-        "resultados": resultados_ordenados
+        "resultados": resultados_ordenados,
+        "resultado_real": {
+            "final_score": match_data['final_score'],
+            "first_half_score": match_data['first_half_score'],
+            "second_half_score": match_data['second_half_score'],
+            "winner": match_data['winner']
+        },
+        "estadio": {
+            "nombre": match_data.get('venue', {}).get('name', 'No disponible'),
+            "ciudad": match_data.get('venue', {}).get('city', 'No disponible')
+        },
+        "status": {
+            "estado": match_data.get('status', {}).get('long', 'No disponible'),
+            "minutos": match_data.get('status', {}).get('elapsed', 0),
+            "tiempo_extra": match_data.get('status', {}).get('extra', 0)
+        }
     }
     return jsonify(response_data)
 
@@ -63,4 +84,4 @@ def get_match_data_with_log(match_id):
     return polla.get_match_details(match_id)
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000) 
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))

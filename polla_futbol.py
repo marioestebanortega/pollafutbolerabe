@@ -63,10 +63,7 @@ class PollaFutbol:
             response.raise_for_status()
             data = response.json()
 
-            # LOG: Imprimir la respuesta completa de la API para inspección
-            print("\n--- RESPUESTA COMPLETA DE LA API ---")
-            pprint.pprint(data)
-            print("--- FIN RESPUESTA API ---\n")
+
             
             if not data['response']:
                 print("No se encontró el partido")
