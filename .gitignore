@@ -1,0 +1,39 @@
+# Entornos virtuales
+.env
+.venv
+venv/
+ENV/
+
+# Archivos de entorno y configuración sensible
+.env*
+*.env
+
+# Archivos de pipenv
+Pipfile.lock
+
+# Archivos de caché de Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Archivos de caché de Flask-Caching (si se usa FileSystemCache)
+flask_cache/
+instance/
+
+# Archivos de logs
+*.log
+
+# Archivos temporales y de sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de test y resultados temporales
+*.tmp
+*.bak
+
+# Archivos de bases de datos locales
+*.sqlite3
+*.db
+
+
