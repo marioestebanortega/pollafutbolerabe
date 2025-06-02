@@ -249,5 +249,30 @@ def partido_info():
     }
     return jsonify(result)
 
+@app.route('/participantes', methods=['GET'])
+@cache.cached(timeout=300)  # 5 minutos
+def participantes():
+    id_polla_env = os.getenv('ID_POLLA')
+    if not id_polla_env:
+        return jsonify({'error': 'No se ha definido ID_POLLA en el entorno'}), 400
+    try:
+        id_polla = int(id_polla_env)
+    except ValueError:
+        return jsonify({'error': 'ID_POLLA debe ser un número entero'}), 400
+
+    mongo_uri = os.getenv('MONGO_URI')
+    print(f"[LOG] /participantes: Conectando a MongoDB con URI: {mongo_uri}")
+    client = MongoClient(mongo_uri, server_api=ServerApi('1'))
+    db = client['pollafutbol']
+    collection = db['participantes']
+
+    print(f"[LOG] /participantes: Buscando todos los participantes con id_polla={id_polla}")
+    participantes = list(collection.find(
+        {'id_polla': id_polla},
+        {'_id': 0, 'name': 1, 'phone': 1, 'winner': 1, 'first_half_score': 1, 'second_half_score': 1}
+    ))
+    print(f"[LOG] /participantes: Encontrados {len(participantes)} participantes")
+    return jsonify(participantes)
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
