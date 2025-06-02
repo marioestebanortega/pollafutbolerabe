@@ -31,53 +31,144 @@ class PollaFutbol:
         print(f"[LOG] Query a MongoDB: {query}")
         participants = []
         for doc in collection.find(query):
-            participants.append({
-                'name': doc['name'],
-                'winner': doc['winner'],
-                'final_score': doc['final_score'],
-                'first_half_score': doc['first_half_score'],
-                'second_half_score': doc['second_half_score']
-            })
+            # Obtener los tiempos
+            first_half = doc.get('first_half_score', '0-0')
+            second_half = doc.get('second_half_score', '0-0')
+            
+            # Calcular el marcador final sumando los tiempos
+            try:
+                first_home, first_away = map(int, first_half.split('-'))
+                second_home, second_away = map(int, second_half.split('-'))
+                final_home = first_home + second_home
+                final_away = first_away + second_away
+                final_score = f"{final_home}-{final_away}"
+            except (ValueError, AttributeError):
+                final_score = '0-0'
+            
+            participant = {
+                'name': doc.get('name', ''),
+                'winner': doc.get('winner', ''),
+                'final_score': final_score,
+                'first_half_score': first_half,
+                'second_half_score': second_half
+            }
+            participants.append(participant)
         print(f"[LOG] Participantes encontrados: {len(participants)}")
         return participants
 
     def get_match_details(self, match_id):
-        """Obtiene los detalles del partido desde la API"""
-        url = f"{self.base_url}/fixtures"
-        params = {'id': match_id}
-        
-        try:
-            response = requests.get(url, headers=self.headers, params=params)
-            response.raise_for_status()
-            data = response.json()
-
-            if not data['response']:
-                print("No se encontró el partido")
+        """Obtiene los detalles de un partido específico usando la API de football o un mock en modo desarrollo"""
+        develop_mode_raw = os.getenv('develop_mode', 'FALSE')
+        develop_mode = develop_mode_raw.upper() == 'TRUE'
+        save_json_raw = os.getenv('SAVE_JSON', 'FALSE')
+        save_json = save_json_raw.upper() == 'TRUE'
+        print(f"[LOG] develop_mode (raw): '{develop_mode_raw}' interpretado como {develop_mode}")
+        print(f"[LOG] SAVE_JSON (raw): '{save_json_raw}' interpretado como {save_json}")
+        if develop_mode:
+            print('[LOG] MODO DESARROLLO ACTIVADO: Usando mock de la API')
+            try:
+                with open('ejemplo_api_football.json', 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+            except Exception as e:
+                print(f"[LOG] Error abriendo ejemplo_api_football.json: {e}")
                 return None
+            if data['response']:
+                match = data['response'][0]
+                # Extraer datos del partido
+                home_team = match['teams']['home']['name']
+                away_team = match['teams']['away']['name']
+                home_logo = match['teams']['home']['logo']
+                away_logo = match['teams']['away']['logo']
+                league_logo = match['league']['logo']
                 
-            match = data['response'][0]
-
-            # Manejo seguro de secondhalf
-            second_half = match['score'].get('secondhalf')
-            if second_half and second_half['home'] is not None and second_half['away'] is not None:
-                second_half_score = f"{second_half['home']}-{second_half['away']}"
-            else:
-                second_half_score = "N/A"
-
-            return {
-                'home_team': match['teams']['home']['name'],
-                'away_team': match['teams']['away']['name'],
-                'home_logo': match['teams']['home']['logo'],
-                'away_logo': match['teams']['away']['logo'],
-                'league_logo': match['league']['logo'],
-                'winner': self._determine_winner(match),
-                'final_score': f"{match['goals']['home']}-{match['goals']['away']}",
-                'first_half_score': f"{match['score']['halftime']['home']}-{match['score']['halftime']['away']}",
-                'second_half_score': second_half_score
+                # Obtener marcadores
+                goals_home = match['goals']['home']
+                goals_away = match['goals']['away']
+                halftime_home = match['score']['halftime']['home']
+                halftime_away = match['score']['halftime']['away']
+                
+                # Calcular marcador del segundo tiempo
+                second_half_home = goals_home - halftime_home
+                second_half_away = goals_away - halftime_away
+                
+                # Determinar ganador
+                if goals_home > goals_away:
+                    winner = 'home'
+                elif goals_home < goals_away:
+                    winner = 'away'
+                else:
+                    winner = 'draw'
+                
+                return {
+                    'home_team': home_team,
+                    'away_team': away_team,
+                    'home_logo': home_logo,
+                    'away_logo': away_logo,
+                    'league_logo': league_logo,
+                    'final_score': f"{goals_home}-{goals_away}",
+                    'first_half_score': f"{halftime_home}-{halftime_away}",
+                    'second_half_score': f"{second_half_home}-{second_half_away}",
+                    'winner': winner,
+                    'venue': match['fixture']['venue'],
+                    'status': match['fixture']['status']
+                }
+        else:
+            print('[LOG] MODO PRODUCTIVO: Llamando a la API de football')
+            url = f"{self.base_url}/fixtures"
+            params = {
+                'id': match_id
             }
-        except requests.exceptions.RequestException as e:
-            print(f"Error al obtener datos del partido: {e}")
-            return None
+            response = requests.get(url, headers=self.headers, params=params)
+            if response.status_code == 200:
+                data = response.json()
+                # Guardar la respuesta cruda de la API solo si SAVE_JSON=TRUE
+                if save_json:
+                    try:
+                        with open('api_football_response.json', 'w', encoding='utf-8') as f:
+                            json.dump(data, f, ensure_ascii=False, indent=2)
+                    except Exception as e:
+                        print(f"[LOG] Error guardando api_football_response.json: {e}")
+                if data['response']:
+                    match = data['response'][0]
+                    # Extraer datos del partido
+                    home_team = match['teams']['home']['name']
+                    away_team = match['teams']['away']['name']
+                    home_logo = match['teams']['home']['logo']
+                    away_logo = match['teams']['away']['logo']
+                    league_logo = match['league']['logo']
+                    
+                    # Obtener marcadores
+                    goals_home = match['goals']['home']
+                    goals_away = match['goals']['away']
+                    halftime_home = match['score']['halftime']['home']
+                    halftime_away = match['score']['halftime']['away']
+                    
+                    # Calcular marcador del segundo tiempo
+                    second_half_home = goals_home - halftime_home
+                    second_half_away = goals_away - halftime_away
+                    
+                    # Determinar ganador
+                    if goals_home > goals_away:
+                        winner = 'home'
+                    elif goals_home < goals_away:
+                        winner = 'away'
+                    else:
+                        winner = 'draw'
+                    
+                    return {
+                        'home_team': home_team,
+                        'away_team': away_team,
+                        'home_logo': home_logo,
+                        'away_logo': away_logo,
+                        'league_logo': league_logo,
+                        'final_score': f"{goals_home}-{goals_away}",
+                        'first_half_score': f"{halftime_home}-{halftime_away}",
+                        'second_half_score': f"{second_half_home}-{second_half_away}",
+                        'winner': winner,
+                        'venue': match['fixture']['venue'],
+                        'status': match['fixture']['status']
+                    }
+        return None
 
     def _determine_winner(self, match):
         """Determina el ganador del partido"""

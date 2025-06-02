@@ -1,10 +1,11 @@
 import os
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_caching import Cache
 from polla_futbol import PollaFutbol
 from dotenv import load_dotenv
 import json
+from pymongo import MongoClient
 from pymongo.server_api import ServerApi
 
 load_dotenv()
@@ -90,44 +91,103 @@ def get_resultados():
 
 def get_match_data_with_log(match_id):
     global api_call_count
-    develop_mode = os.getenv('develop_mode', 'false').lower() == 'true'
+    develop_mode = os.getenv('develop_mode', 'FALSE').upper() == 'TRUE'
     print(f"[LOG] get_match_data_with_log: develop_mode={develop_mode}, match_id={match_id}")
-    if develop_mode:
-        print('[LOG] MODO DESARROLLO ACTIVADO: Usando mock de la API')
-        try:
-            with open('ejemplo_api_football.json', 'r') as f:
-                mock_data = json.load(f)
-            print(f"[LOG] Archivo ejemplo_api_football.json abierto correctamente")
-        except Exception as e:
-            print(f"[LOG] Error abriendo ejemplo_api_football.json: {e}")
-            return None
-        # Tomar el primer elemento de response
-        response = mock_data['response'][0]
-        print(f"[LOG] response[0].fixture.id: {response['fixture']['id']}")
-        if response['fixture']['id'] != match_id:
-            print(f"[LOG] El id del partido en el mock ({response['fixture']['id']}) no coincide con el MATCH_ID ({match_id})")
-            return None
-        # Adaptar el formato del JSON de ejemplo al formato que espera el código
-        adapted_data = {
-            'home_team': response['teams']['home']['name'],
-            'away_team': response['teams']['away']['name'],
-            'home_logo': response['teams']['home']['logo'],
-            'away_logo': response['teams']['away']['logo'],
-            'league_logo': response['league']['logo'],
-            'final_score': f"{response['goals']['home']}-{response['goals']['away']}",
-            'first_half_score': f"{response['score']['halftime']['home']}-{response['score']['halftime']['away']}",
-            'second_half_score': f"{response['goals']['home'] - response['score']['halftime']['home']}-{response['goals']['away'] - response['score']['halftime']['away']}",
-            'winner': 'home' if response['goals']['home'] > response['goals']['away'] else 'away' if response['goals']['home'] < response['goals']['away'] else 'draw',
-            'venue': response['fixture']['venue'],
-            'status': response['fixture']['status']
-        }
-        print(f"[LOG] adapted_data generado: {adapted_data}")
-        return adapted_data
-    else:
+    if not develop_mode:
         api_call_count += 1
-        print(f"[LOG] Llamada real a la API de football número: {api_call_count}")
-        polla = PollaFutbol()
-        return polla.get_match_details(match_id)
+        print(f"[LOG] Llamada a la API de football número: {api_call_count}")
+    polla = PollaFutbol()
+    return polla.get_match_details(match_id)
+
+@app.route('/buscar-participante', methods=['GET'])
+def buscar_participante():
+    id_polla = request.args.get('id_polla')
+    phone = request.args.get('phone')
+    if not id_polla or not phone:
+        return jsonify({'error': 'Faltan parámetros'}), 400
+
+    mongo_uri = os.getenv('MONGO_URI')
+    client = MongoClient(mongo_uri, server_api=ServerApi('1'))
+    db = client['pollafutbol']
+    collection = db['participantes']
+
+    participante = collection.find_one({'id_polla': int(id_polla), 'phone': phone})
+    if participante:
+        participante.pop('_id', None)
+        return jsonify(participante)
+    else:
+        return jsonify(None), 200
+
+@app.route('/actualizar-participante', methods=['PUT'])
+def actualizar_participante():
+    data = request.get_json()
+    id_polla = data.get('id_polla')
+    phone = data.get('phone')
+    if not id_polla or not phone:
+        return jsonify({'error': 'Faltan parámetros'}), 400
+
+    mongo_uri = os.getenv('MONGO_URI')
+    client = MongoClient(mongo_uri, server_api=ServerApi('1'))
+    db = client['pollafutbol']
+    collection = db['participantes']
+
+    # Ignorar final_score al actualizar
+    update_fields = {k: v for k, v in data.items() if k not in ['id_polla', 'phone', 'final_score']}
+    result = collection.update_one(
+        {'id_polla': int(id_polla), 'phone': phone},
+        {'$set': update_fields}
+    )
+    if result.matched_count:
+        return jsonify({'success': True, 'updated': result.modified_count})
+    else:
+        return jsonify({'error': 'Participante no encontrado'}), 404
+
+@app.route('/crear-participante', methods=['POST'])
+def crear_participante():
+    data = request.get_json()
+    
+    # Validar campos requeridos
+    required_fields = ['id_polla', 'name', 'phone', 'winner', 'first_half_score', 'second_half_score']
+    for field in required_fields:
+        if field not in data:
+            return jsonify({'error': f'Falta el campo requerido: {field}'}), 400
+
+    mongo_uri = os.getenv('MONGO_URI')
+    client = MongoClient(mongo_uri, server_api=ServerApi('1'))
+    db = client['pollafutbol']
+    collection = db['participantes']
+
+    # Verificar si ya existe un participante con el mismo teléfono para esta polla
+    existing = collection.find_one({
+        'id_polla': int(data['id_polla']),
+        'phone': data['phone']
+    })
+    if existing:
+        return jsonify({'error': 'Ya existe un participante con este teléfono para esta polla'}), 409
+
+    # Crear el nuevo participante
+    try:
+        result = collection.insert_one({
+            'id_polla': int(data['id_polla']),
+            'name': data['name'],
+            'phone': data['phone'],
+            'winner': data['winner'],
+            'first_half_score': data['first_half_score'],
+            'second_half_score': data['second_half_score']
+        })
+        
+        if result.inserted_id:
+            return jsonify({
+                'success': True,
+                'message': 'Participante creado exitosamente',
+                'id': str(result.inserted_id)
+            }), 201
+        else:
+            return jsonify({'error': 'No se pudo crear el participante'}), 500
+            
+    except Exception as e:
+        print(f"[LOG] Error creando participante: {e}")
+        return jsonify({'error': 'Error al crear el participante'}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
