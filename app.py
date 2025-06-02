@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 import json
 from pymongo import MongoClient
 from pymongo.server_api import ServerApi
+import requests
 
 load_dotenv()
 
@@ -103,19 +104,26 @@ def get_match_data_with_log(match_id):
 def buscar_participante():
     id_polla = request.args.get('id_polla')
     phone = request.args.get('phone')
+    print(f"[LOG] /buscar-participante: id_polla={id_polla}, phone={phone}")
     if not id_polla or not phone:
+        print("[LOG] /buscar-participante: Faltan parámetros")
         return jsonify({'error': 'Faltan parámetros'}), 400
 
     mongo_uri = os.getenv('MONGO_URI')
+    print(f"[LOG] /buscar-participante: Conectando a MongoDB con URI: {mongo_uri}")
     client = MongoClient(mongo_uri, server_api=ServerApi('1'))
     db = client['pollafutbol']
     collection = db['participantes']
 
+    print(f"[LOG] /buscar-participante: Buscando participante con id_polla={id_polla}, phone={phone}")
     participante = collection.find_one({'id_polla': int(id_polla), 'phone': phone})
+    print(f"[LOG] /buscar-participante: Resultado de búsqueda: {participante}")
     if participante:
         participante.pop('_id', None)
+        print(f"[LOG] /buscar-participante: Participante encontrado y retornado")
         return jsonify(participante)
     else:
+        print(f"[LOG] /buscar-participante: Participante no encontrado")
         return jsonify(None), 200
 
 @app.route('/actualizar-participante', methods=['PUT'])
@@ -145,28 +153,34 @@ def actualizar_participante():
 @app.route('/crear-participante', methods=['POST'])
 def crear_participante():
     data = request.get_json()
-    
+    print(f"[LOG] /crear-participante: Datos recibidos: {data}")
     # Validar campos requeridos
     required_fields = ['id_polla', 'name', 'phone', 'winner', 'first_half_score', 'second_half_score']
     for field in required_fields:
         if field not in data:
+            print(f"[LOG] /crear-participante: Falta el campo requerido: {field}")
             return jsonify({'error': f'Falta el campo requerido: {field}'}), 400
 
     mongo_uri = os.getenv('MONGO_URI')
+    print(f"[LOG] /crear-participante: Conectando a MongoDB con URI: {mongo_uri}")
     client = MongoClient(mongo_uri, server_api=ServerApi('1'))
     db = client['pollafutbol']
     collection = db['participantes']
 
     # Verificar si ya existe un participante con el mismo teléfono para esta polla
+    print(f"[LOG] /crear-participante: Buscando si ya existe participante con id_polla={data['id_polla']}, phone={data['phone']}")
     existing = collection.find_one({
         'id_polla': int(data['id_polla']),
         'phone': data['phone']
     })
+    print(f"[LOG] /crear-participante: Resultado de búsqueda existente: {existing}")
     if existing:
+        print(f"[LOG] /crear-participante: Ya existe un participante con este teléfono para esta polla")
         return jsonify({'error': 'Ya existe un participante con este teléfono para esta polla'}), 409
 
     # Crear el nuevo participante
     try:
+        print(f"[LOG] /crear-participante: Insertando nuevo participante en la base de datos")
         result = collection.insert_one({
             'id_polla': int(data['id_polla']),
             'name': data['name'],
@@ -175,19 +189,65 @@ def crear_participante():
             'first_half_score': data['first_half_score'],
             'second_half_score': data['second_half_score']
         })
-        
+        print(f"[LOG] /crear-participante: Resultado de insert_one: {result.inserted_id}")
         if result.inserted_id:
+            print(f"[LOG] /crear-participante: Participante creado exitosamente")
             return jsonify({
                 'success': True,
                 'message': 'Participante creado exitosamente',
                 'id': str(result.inserted_id)
             }), 201
         else:
+            print(f"[LOG] /crear-participante: No se pudo crear el participante")
             return jsonify({'error': 'No se pudo crear el participante'}), 500
-            
     except Exception as e:
         print(f"[LOG] Error creando participante: {e}")
         return jsonify({'error': 'Error al crear el participante'}), 500
+
+@app.route('/partido-info', methods=['GET'])
+@cache.cached(timeout=86400)  # 24 horas
+def partido_info():
+    match_id_env = os.getenv('MATCH_ID')
+    id_polla_env = os.getenv('ID_POLLA')
+    if not match_id_env:
+        return jsonify({'error': 'No se ha definido MATCH_ID en el entorno'}), 400
+    try:
+        match_id = int(match_id_env)
+    except ValueError:
+        return jsonify({'error': 'MATCH_ID debe ser un número entero'}), 400
+
+    # Obtener develop_mode
+    develop_mode = os.getenv('develop_mode', 'FALSE').upper() == 'TRUE'
+    if develop_mode:
+        print('[LOG] /partido-info: MODO DESARROLLO ACTIVADO (mock)')
+        try:
+            with open('ejemplo_api_football.json', 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        except Exception as e:
+            print(f"[LOG] Error abriendo ejemplo_api_football.json: {e}")
+            return jsonify({'error': 'No se pudo abrir el mock'}), 500
+    else:
+        print('[LOG] /partido-info: MODO PRODUCTIVO (API)')
+        polla = PollaFutbol()
+        url = f"{polla.base_url}/fixtures"
+        params = {'id': match_id}
+        response = requests.get(url, headers=polla.headers, params=params)
+        if response.status_code != 200:
+            return jsonify({'error': 'No se pudo obtener datos de la API'}), 503
+        data = response.json()
+
+    if not data.get('response') or not data['response']:
+        return jsonify({'error': 'No se encontró el partido'}), 404
+
+    match = data['response'][0]
+    result = {
+        'match_id': match_id,
+        'id_polla': id_polla_env,
+        'fixture': match.get('fixture', {}),
+        'league': match.get('league', {}),
+        'teams': match.get('teams', {})
+    }
+    return jsonify(result)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
