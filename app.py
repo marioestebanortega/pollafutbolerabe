@@ -287,49 +287,11 @@ def crear_participante():
         return jsonify({'error': 'Error al crear el participante'}), 500
 
 @app.route('/partido-info', methods=['GET'])
-@cache.cached(timeout=86400)  # 24 horas
 def partido_info():
-    match_id_env = os.getenv('MATCH_ID')
-    id_polla_env = os.getenv('ID_POLLA')
-    if not match_id_env:
-        return jsonify({'error': 'No se ha definido MATCH_ID en el entorno'}), 400
-    try:
-        match_id = int(match_id_env)
-    except ValueError:
-        return jsonify({'error': 'MATCH_ID debe ser un número entero'}), 400
-
-    # Obtener develop_mode
-    develop_mode = os.getenv('develop_mode', 'FALSE').upper() == 'TRUE'
-    if develop_mode:
-        print('[LOG] /partido-info: MODO DESARROLLO ACTIVADO (mock)')
-        try:
-            with open('ejemplo_api_football.json', 'r', encoding='utf-8') as f:
-                data = json.load(f)
-        except Exception as e:
-            print(f"[LOG] Error abriendo ejemplo_api_football.json: {e}")
-            return jsonify({'error': 'No se pudo abrir el mock'}), 500
-    else:
-        print('[LOG] /partido-info: MODO PRODUCTIVO (API)')
-        polla = PollaFutbol()
-        url = f"{polla.base_url}/fixtures"
-        params = {'id': match_id}
-        response = requests.get(url, headers=polla.headers, params=params)
-        if response.status_code != 200:
-            return jsonify({'error': 'No se pudo obtener datos de la API'}), 503
-        data = response.json()
-
-    if not data.get('response') or not data['response']:
-        return jsonify({'error': 'No se encontró el partido'}), 404
-
-    match = data['response'][0]
-    result = {
-        'match_id': match_id,
-        'id_polla': id_polla_env,
-        'fixture': match.get('fixture', {}),
-        'league': match.get('league', {}),
-        'teams': match.get('teams', {})
-    }
-    return jsonify(result)
+    data = get_cached_partido_info()
+    if not data:
+        return jsonify({'error': 'No se pudo obtener la información del partido'}), 500
+    return jsonify(data)
 
 @app.route('/participantes', methods=['GET'])
 @cache.cached(timeout=300)  # 5 minutos
