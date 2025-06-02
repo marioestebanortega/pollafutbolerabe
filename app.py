@@ -8,6 +8,9 @@ import json
 from pymongo import MongoClient
 from pymongo.server_api import ServerApi
 import requests
+import datetime
+import pytz
+from flask import current_app
 
 load_dotenv()
 
@@ -126,14 +129,88 @@ def buscar_participante():
         print(f"[LOG] /buscar-participante: Participante no encontrado")
         return jsonify(None), 200
 
+def get_cached_partido_info():
+    """Obtiene la info general del partido usando el caché de /partido-info."""
+    cache_key = 'view//partido-info'
+    data = cache.get(cache_key)
+    if data is not None:
+        print('[LOG] get_cached_partido_info: Usando datos cacheados')
+        return data
+    # Si no está en caché, llamar a la lógica de partido_info y guardar en caché
+    print('[LOG] get_cached_partido_info: No hay datos en caché, obteniendo y cacheando')
+    match_id_env = os.getenv('MATCH_ID')
+    if not match_id_env:
+        return None
+    try:
+        match_id = int(match_id_env)
+    except ValueError:
+        return None
+    develop_mode = os.getenv('develop_mode', 'FALSE').upper() == 'TRUE'
+    if develop_mode:
+        try:
+            with open('ejemplo_api_football.json', 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        except Exception as e:
+            print(f"[LOG] get_cached_partido_info: Error abriendo mock: {e}")
+            return None
+        if not data.get('response') or not data['response']:
+            return None
+        match = data['response'][0]
+    else:
+        polla = PollaFutbol()
+        url = f"{polla.base_url}/fixtures"
+        params = {'id': match_id}
+        response = requests.get(url, headers=polla.headers, params=params)
+        if response.status_code != 200:
+            return None
+        data = response.json()
+        if not data.get('response') or not data['response']:
+            return None
+        match = data['response'][0]
+    result = {
+        'match_id': match_id,
+        'id_polla': os.getenv('ID_POLLA'),
+        'fixture': match.get('fixture', {}),
+        'league': match.get('league', {}),
+        'teams': match.get('teams', {})
+    }
+    cache.set(cache_key, result, timeout=86400)
+    return result
+
+def puede_registrar_o_actualizar():
+    """Valida si se puede registrar/actualizar según la fecha del partido."""
+    partido_info = get_cached_partido_info()
+    if not partido_info:
+        return False, 'No se pudo obtener la información del partido para validar el tiempo.'
+    fixture = partido_info.get('fixture', {})
+    fecha_partido_str = fixture.get('date')
+    timezone = fixture.get('timezone', 'UTC')
+    if not fecha_partido_str:
+        return False, 'No se encontró la fecha del partido'
+    # Parsear fecha del partido en UTC
+    fecha_partido = datetime.datetime.fromisoformat(fecha_partido_str.replace('Z', '+00:00'))
+    fecha_partido_utc = fecha_partido.astimezone(pytz.UTC)
+    ahora_utc = datetime.datetime.now(pytz.UTC)
+    diferencia = (fecha_partido_utc - ahora_utc).total_seconds() / 60  # minutos
+    print(f"[LOG] Validación de tiempo: ahora_utc={ahora_utc}, fecha_partido_utc={fecha_partido_utc}, diferencia_minutos={diferencia}")
+    if diferencia <= 5:
+        return False, '¡El tiempo para registrar o modificar tu predicción ha terminado! Solo puedes hacerlo hasta 5 minutos antes del inicio del partido.'
+    return True, None
+
 @app.route('/actualizar-participante', methods=['PUT'])
 def actualizar_participante():
     data = request.get_json()
     id_polla = data.get('id_polla')
     phone = data.get('phone')
+    print(f"[LOG] /actualizar-participante: Datos recibidos: {data}")
     if not id_polla or not phone:
+        print("[LOG] /actualizar-participante: Faltan parámetros")
         return jsonify({'error': 'Faltan parámetros'}), 400
-
+    # Validar tiempo
+    ok, msg = puede_registrar_o_actualizar()
+    if not ok:
+        print(f"[LOG] /actualizar-participante: Actualización bloqueada por tiempo: {msg}")
+        return jsonify({'error': msg}), 403
     mongo_uri = os.getenv('MONGO_URI')
     client = MongoClient(mongo_uri, server_api=ServerApi('1'))
     db = client['pollafutbol']
@@ -154,6 +231,11 @@ def actualizar_participante():
 def crear_participante():
     data = request.get_json()
     print(f"[LOG] /crear-participante: Datos recibidos: {data}")
+    # Validar tiempo
+    ok, msg = puede_registrar_o_actualizar()
+    if not ok:
+        print(f"[LOG] /crear-participante: Registro bloqueado por tiempo: {msg}")
+        return jsonify({'error': msg}), 403
     # Validar campos requeridos
     required_fields = ['id_polla', 'name', 'phone', 'winner', 'first_half_score', 'second_half_score']
     for field in required_fields:
