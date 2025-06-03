@@ -1,7 +1,7 @@
 {
   "get": "fixtures",
   "parameters": {
-    "id": "1376970"
+    "id": "1376902"
   },
   "errors": [],
   "results": 1,
@@ -12,58 +12,58 @@
   "response": [
     {
       "fixture": {
-        "id": 1376970,
-        "referee": null,
+        "id": 1376902,
+        "referee": "J. Ortiz",
         "timezone": "UTC",
-        "date": "2025-06-02T20:00:00+00:00",
-        "timestamp": 1748894400,
+        "date": "2025-06-03T01:15:00+00:00",
+        "timestamp": 1748913300,
         "periods": {
-          "first": 1748894400,
-          "second": 1748898000
+          "first": 1748913300,
+          "second": null
         },
         "venue": {
-          "id": null,
-          "name": "Estadio Ypané",
-          "city": "Ypané"
+          "id": 378,
+          "name": "Estadio Hernán Ramírez Villegas",
+          "city": "Pereira"
         },
         "status": {
-          "long": "Second Half",
-          "short": "2H",
-          "elapsed": 48,
+          "long": "First Half",
+          "short": "1H",
+          "elapsed": 22,
           "extra": null
         }
       },
       "league": {
-        "id": 666,
-        "name": "Friendlies Women",
-        "country": "World",
-        "logo": "https://media.api-sports.io/football/leagues/666.png",
-        "flag": null,
+        "id": 241,
+        "name": "Copa Colombia",
+        "country": "Colombia",
+        "logo": "https://media.api-sports.io/football/leagues/241.png",
+        "flag": "https://media.api-sports.io/flags/co.svg",
         "season": 2025,
-        "round": "Friendlies 2",
+        "round": "Group Stage - 2",
         "standings": false
       },
       "teams": {
         "home": {
-          "id": 16941,
-          "name": "Paraguay W",
-          "logo": "https://media.api-sports.io/football/teams/16941.png",
-          "winner": true
+          "id": 1462,
+          "name": "Deportivo Pereira",
+          "logo": "https://media.api-sports.io/football/teams/1462.png",
+          "winner": null
         },
         "away": {
-          "id": 1731,
-          "name": "Ecuador W",
-          "logo": "https://media.api-sports.io/football/teams/1731.png",
-          "winner": false
+          "id": 1147,
+          "name": "Fortaleza FC",
+          "logo": "https://media.api-sports.io/football/teams/1147.png",
+          "winner": null
         }
       },
       "goals": {
-        "home": 1,
+        "home": 0,
         "away": 0
       },
       "score": {
         "halftime": {
-          "home": 1,
+          "home": 0,
           "away": 0
         },
         "fulltime": {
@@ -79,74 +79,7 @@
           "away": null
         }
       },
-      "events": [
-        {
-          "time": {
-            "elapsed": 2,
-            "extra": null
-          },
-          "team": {
-            "id": 16941,
-            "name": "Paraguay W",
-            "logo": "https://media.api-sports.io/football/teams/16941.png"
-          },
-          "player": {
-            "id": null,
-            "name": null
-          },
-          "assist": {
-            "id": null,
-            "name": null
-          },
-          "type": "Goal",
-          "detail": "Normal Goal",
-          "comments": null
-        },
-        {
-          "time": {
-            "elapsed": 5,
-            "extra": null
-          },
-          "team": {
-            "id": 16941,
-            "name": "Paraguay W",
-            "logo": "https://media.api-sports.io/football/teams/16941.png"
-          },
-          "player": {
-            "id": null,
-            "name": null
-          },
-          "assist": {
-            "id": null,
-            "name": null
-          },
-          "type": "Card",
-          "detail": "Yellow Card",
-          "comments": null
-        },
-        {
-          "time": {
-            "elapsed": 20,
-            "extra": null
-          },
-          "team": {
-            "id": 1731,
-            "name": "Ecuador W",
-            "logo": "https://media.api-sports.io/football/teams/1731.png"
-          },
-          "player": {
-            "id": null,
-            "name": "M. Rodriguez"
-          },
-          "assist": {
-            "id": null,
-            "name": null
-          },
-          "type": "Card",
-          "detail": "Yellow Card",
-          "comments": null
-        }
-      ],
+      "events": [],
       "lineups": [],
       "statistics": [],
       "players": []

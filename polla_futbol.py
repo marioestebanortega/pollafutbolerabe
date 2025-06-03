@@ -31,11 +31,9 @@ class PollaFutbol:
         print(f"[LOG] Query a MongoDB: {query}")
         participants = []
         for doc in collection.find(query):
-            # Obtener los tiempos
             first_half = doc.get('first_half_score', '0-0')
             second_half = doc.get('second_half_score', '0-0')
-            
-            # Calcular el marcador final sumando los tiempos
+            # Calcular marcador final sumando los tiempos
             try:
                 first_home, first_away = map(int, first_half.split('-'))
                 second_home, second_away = map(int, second_half.split('-'))
@@ -44,7 +42,6 @@ class PollaFutbol:
                 final_score = f"{final_home}-{final_away}"
             except (ValueError, AttributeError):
                 final_score = '0-0'
-            
             participant = {
                 'name': doc.get('name', ''),
                 'winner': doc.get('winner', ''),
@@ -190,31 +187,39 @@ class PollaFutbol:
         """Calcula la puntuación basada en las predicciones"""
         score = 0
 
-        # Mapear predicción de ganador a nombre real
-        pred_winner = prediction['winner'].lower()
-        if pred_winner == 'local':
-            pred_winner_name = actual_result['home_team'].lower()
-        elif pred_winner == 'visitante':
-            pred_winner_name = actual_result['away_team'].lower()
+        # Normalizar ganador predicho
+        pred_winner = prediction['winner'].strip().lower()
+        real_winner = actual_result['winner'].strip().lower()
+        if pred_winner in ['empate', 'draw']:
+            pred_winner_norm = 'draw'
+        elif pred_winner in ['local', actual_result['home_team'].strip().lower()]:
+            pred_winner_norm = actual_result['home_team'].strip().lower()
+        elif pred_winner in ['visitante', actual_result['away_team'].strip().lower()]:
+            pred_winner_norm = actual_result['away_team'].strip().lower()
         else:
-            pred_winner_name = 'empate'
+            pred_winner_norm = pred_winner
 
-        # Puntos por ganador (3 puntos)
-        if pred_winner_name == actual_result['winner'].lower():
+        # 1. Ganador
+        if pred_winner_norm == real_winner:
             score += 3
-        
-        # Puntos por marcador final (5 puntos)
-        if prediction['final_score'] == actual_result['final_score']:
-            score += 5
-        
-        # Puntos por primer tiempo (2 puntos)
+
+        # 2. Marcador final (suma de tiempos)
+        try:
+            pred_final = prediction['final_score']
+            real_final = actual_result['final_score']
+            if pred_final == real_final:
+                score += 5
+        except Exception:
+            pass
+
+        # 3. Primer tiempo
         if prediction['first_half_score'] == actual_result['first_half_score']:
             score += 2
-        
-        # Puntos por segundo tiempo (2 puntos)
+
+        # 4. Segundo tiempo
         if prediction['second_half_score'] == actual_result['second_half_score']:
             score += 2
-        
+
         return score
 
     def process_match(self, match_id, match_data=None):
