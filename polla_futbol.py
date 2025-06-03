@@ -81,18 +81,20 @@ class PollaFutbol:
                 away_logo = match['teams']['away']['logo']
                 league_logo = match['league']['logo']
                 
-                # Obtener marcadores
-                goals_home = match['goals']['home']
-                goals_away = match['goals']['away']
-                halftime_home = match['score']['halftime']['home']
-                halftime_away = match['score']['halftime']['away']
+                # Obtener marcadores (adaptado para partido no iniciado)
+                goals_home = match['goals']['home'] if match['goals']['home'] is not None else 0
+                goals_away = match['goals']['away'] if match['goals']['away'] is not None else 0
+                halftime_home = match['score']['halftime']['home'] if match['score']['halftime']['home'] is not None else 0
+                halftime_away = match['score']['halftime']['away'] if match['score']['halftime']['away'] is not None else 0
                 
                 # Calcular marcador del segundo tiempo
                 second_half_home = goals_home - halftime_home
                 second_half_away = goals_away - halftime_away
                 
                 # Determinar ganador
-                if goals_home > goals_away:
+                if match['fixture']['status']['short'] in ['NS', 'TBD', 'PST', 'CANC', 'SUSP', 'INT', 'ABD', 'AWD', 'WO']:
+                    winner = 'pending'
+                elif goals_home > goals_away:
                     winner = 'home'
                 elif goals_home < goals_away:
                     winner = 'away'
@@ -137,18 +139,20 @@ class PollaFutbol:
                     away_logo = match['teams']['away']['logo']
                     league_logo = match['league']['logo']
                     
-                    # Obtener marcadores
-                    goals_home = match['goals']['home']
-                    goals_away = match['goals']['away']
-                    halftime_home = match['score']['halftime']['home']
-                    halftime_away = match['score']['halftime']['away']
+                    # Obtener marcadores (adaptado para partido no iniciado)
+                    goals_home = match['goals']['home'] if match['goals']['home'] is not None else 0
+                    goals_away = match['goals']['away'] if match['goals']['away'] is not None else 0
+                    halftime_home = match['score']['halftime']['home'] if match['score']['halftime']['home'] is not None else 0
+                    halftime_away = match['score']['halftime']['away'] if match['score']['halftime']['away'] is not None else 0
                     
                     # Calcular marcador del segundo tiempo
                     second_half_home = goals_home - halftime_home
                     second_half_away = goals_away - halftime_away
                     
                     # Determinar ganador
-                    if goals_home > goals_away:
+                    if match['fixture']['status']['short'] in ['NS', 'TBD', 'PST', 'CANC', 'SUSP', 'INT', 'ABD', 'AWD', 'WO']:
+                        winner = 'pending'
+                    elif goals_home > goals_away:
                         winner = 'home'
                     elif goals_home < goals_away:
                         winner = 'away'

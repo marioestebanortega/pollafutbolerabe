@@ -19,6 +19,8 @@ CORS(app)
 cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache', 'CACHE_DEFAULT_TIMEOUT': 300})  # 5 minutos
 api_call_count = 0
 
+PREDICCION_MINUTOS_LIMITE = int(os.environ.get('PREDICCION_MINUTOS_LIMITE', 5))
+
 @app.route('/resultados', methods=['GET'])
 @cache.cached()
 def get_resultados():
@@ -38,12 +40,6 @@ def get_resultados():
     results = polla.process_match(match_id, match_data=match_data)
     print(f"[LOG] results calculados: {results}")
 
-    if not results:
-        print("[LOG] No se encontraron predicciones para este partido (results es None o vacío)")
-        return jsonify({
-            "error": "No se encontraron predicciones para este partido."
-        }), 404
-
     equipos = {
         "home": {
             "name": match_data['home_team'],
@@ -58,19 +54,23 @@ def get_resultados():
         }
     }
 
-    resultados_ordenados = sorted(results, key=lambda x: x['score'], reverse=True)
-    posicion = 1
-    prev_score = None
-    skip = 0
-    for idx, res in enumerate(resultados_ordenados, 1):
-        if prev_score is not None and res['score'] == prev_score:
-            res['posicion'] = posicion
-            skip += 1
-        else:
-            posicion = idx
-            res['posicion'] = posicion
-            skip = 1
-        prev_score = res['score']
+    if not results:
+        print("[LOG] No se encontraron predicciones para este partido (results es None o vacío)")
+        resultados_ordenados = []
+    else:
+        resultados_ordenados = sorted(results, key=lambda x: x['score'], reverse=True)
+        posicion = 1
+        prev_score = None
+        skip = 0
+        for idx, res in enumerate(resultados_ordenados, 1):
+            if prev_score is not None and res['score'] == prev_score:
+                res['posicion'] = posicion
+                skip += 1
+            else:
+                posicion = idx
+                res['posicion'] = posicion
+                skip = 1
+            prev_score = res['score']
 
     response_data = {
         "equipos": equipos,
@@ -193,8 +193,8 @@ def puede_registrar_o_actualizar():
     ahora_utc = datetime.datetime.now(pytz.UTC)
     diferencia = (fecha_partido_utc - ahora_utc).total_seconds() / 60  # minutos
     print(f"[LOG] Validación de tiempo: ahora_utc={ahora_utc}, fecha_partido_utc={fecha_partido_utc}, diferencia_minutos={diferencia}")
-    if diferencia <= 5:
-        return False, '¡El tiempo para registrar o modificar tu predicción ha terminado! Solo puedes hacerlo hasta 5 minutos antes del inicio del partido.'
+    if diferencia <= PREDICCION_MINUTOS_LIMITE:
+        return False, f'¡El tiempo para registrar o modificar tu predicción ha terminado! Solo puedes hacerlo hasta {PREDICCION_MINUTOS_LIMITE} minutos antes del inicio del partido.'
     return True, None
 
 @app.route('/actualizar-participante', methods=['PUT'])
@@ -294,7 +294,6 @@ def partido_info():
     return jsonify(data)
 
 @app.route('/participantes', methods=['GET'])
-@cache.cached(timeout=300)  # 5 minutos
 def participantes():
     id_polla_env = os.getenv('ID_POLLA')
     if not id_polla_env:
