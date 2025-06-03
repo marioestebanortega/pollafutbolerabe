@@ -1,7 +1,7 @@
 {
   "get": "fixtures",
   "parameters": {
-    "id": "1376902"
+    "id": "1376903"
   },
   "errors": [],
   "results": 1,
@@ -12,24 +12,24 @@
   "response": [
     {
       "fixture": {
-        "id": 1376902,
-        "referee": "J. Ortiz",
+        "id": 1376903,
+        "referee": "B. Salazar",
         "timezone": "UTC",
-        "date": "2025-06-03T01:15:00+00:00",
-        "timestamp": 1748913300,
+        "date": "2025-06-03T21:00:00+00:00",
+        "timestamp": 1748984400,
         "periods": {
-          "first": 1748913300,
+          "first": null,
           "second": null
         },
         "venue": {
-          "id": 378,
-          "name": "Estadio Hernán Ramírez Villegas",
-          "city": "Pereira"
+          "id": 371,
+          "name": "Estadio Metropolitano de Techo",
+          "city": "Bogotá, D.C."
         },
         "status": {
-          "long": "First Half",
-          "short": "1H",
-          "elapsed": 22,
+          "long": "Not Started",
+          "short": "NS",
+          "elapsed": null,
           "extra": null
         }
       },
@@ -45,26 +45,26 @@
       },
       "teams": {
         "home": {
-          "id": 1462,
-          "name": "Deportivo Pereira",
-          "logo": "https://media.api-sports.io/football/teams/1462.png",
+          "id": 1458,
+          "name": "Bogota FC",
+          "logo": "https://media.api-sports.io/football/teams/1458.png",
           "winner": null
         },
         "away": {
-          "id": 1147,
-          "name": "Fortaleza FC",
-          "logo": "https://media.api-sports.io/football/teams/1147.png",
+          "id": 1143,
+          "name": "Leones FC",
+          "logo": "https://media.api-sports.io/football/teams/1143.png",
           "winner": null
         }
       },
       "goals": {
-        "home": 0,
-        "away": 0
+        "home": null,
+        "away": null
       },
       "score": {
         "halftime": {
-          "home": 0,
-          "away": 0
+          "home": null,
+          "away": null
         },
         "fulltime": {
           "home": null,
