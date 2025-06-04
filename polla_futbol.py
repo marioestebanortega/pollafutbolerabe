@@ -231,39 +231,58 @@ class PollaFutbol:
         """Calcula la puntuación basada en las predicciones"""
         score = 0
 
-        # Normalizar ganador predicho
+        # 1. Ganador (3 puntos)
         pred_winner = prediction['winner'].strip().lower()
         real_winner = actual_result['winner'].strip().lower()
+        
+        # Si el ganador real es 'home', usar el nombre del equipo local
+        if real_winner == 'home':
+            real_winner = actual_result['home_team'].strip().lower()
+        elif real_winner == 'away':
+            real_winner = actual_result['away_team'].strip().lower()
+        
+        # Normalizar 'empate' y 'draw'
         if pred_winner in ['empate', 'draw']:
-            pred_winner_norm = 'draw'
-        elif pred_winner in ['local', actual_result['home_team'].strip().lower()]:
-            pred_winner_norm = actual_result['home_team'].strip().lower()
-        elif pred_winner in ['visitante', actual_result['away_team'].strip().lower()]:
-            pred_winner_norm = actual_result['away_team'].strip().lower()
-        else:
-            pred_winner_norm = pred_winner
-
-        # 1. Ganador
-        if pred_winner_norm == real_winner:
+            pred_winner = 'draw'
+            
+        print(f"[LOG][SCORE] Comparando ganadores - Predicción: {pred_winner} vs Real: {real_winner}")
+        if pred_winner == real_winner:
+            print("[LOG][SCORE] Ganador acertado (+3)")
             score += 3
+        else:
+            print("[LOG][SCORE] Ganador NO acertado")
 
-        # 2. Marcador final (suma de tiempos)
-        try:
-            pred_final = prediction['final_score']
-            real_final = actual_result['final_score']
-            if pred_final == real_final:
-                score += 5
-        except Exception:
-            pass
+        # 2. Marcador final (5 puntos)
+        pred_final = prediction['final_score'].strip()
+        real_final = actual_result['final_score'].strip()
+        print(f"[LOG][SCORE] Comparando marcador final - Predicción: {pred_final} vs Real: {real_final}")
+        if pred_final == real_final:
+            print("[LOG][SCORE] Marcador final acertado (+5)")
+            score += 5
+        else:
+            print("[LOG][SCORE] Marcador final NO acertado")
 
-        # 3. Primer tiempo
-        if prediction['first_half_score'] == actual_result['first_half_score']:
+        # 3. Primer tiempo (2 puntos)
+        pred_first = prediction['first_half_score'].strip()
+        real_first = actual_result['first_half_score'].strip()
+        print(f"[LOG][SCORE] Comparando primer tiempo - Predicción: {pred_first} vs Real: {real_first}")
+        if pred_first == real_first:
+            print("[LOG][SCORE] Primer tiempo acertado (+2)")
             score += 2
+        else:
+            print("[LOG][SCORE] Primer tiempo NO acertado")
 
-        # 4. Segundo tiempo
-        if prediction['second_half_score'] == actual_result['second_half_score']:
+        # 4. Segundo tiempo (2 puntos)
+        pred_second = prediction['second_half_score'].strip()
+        real_second = actual_result['second_half_score'].strip()
+        print(f"[LOG][SCORE] Comparando segundo tiempo - Predicción: {pred_second} vs Real: {real_second}")
+        if pred_second == real_second:
+            print("[LOG][SCORE] Segundo tiempo acertado (+2)")
             score += 2
+        else:
+            print("[LOG][SCORE] Segundo tiempo NO acertado")
 
+        print(f"[LOG][SCORE] Puntaje total calculado: {score}")
         return score
 
     def process_match(self, match_id, match_data=None):

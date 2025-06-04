@@ -29,7 +29,7 @@
         "status": {
           "long": "Match Finished",
           "short": "FT",
-          "elapsed": 10,
+          "elapsed": 90,
           "extra": null
         }
       },

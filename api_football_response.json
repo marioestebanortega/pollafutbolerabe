@@ -27,9 +27,9 @@
           "city": "Santiago de Cali"
         },
         "status": {
-          "long": "Match Started",
+          "long": "Match Finished",
           "short": "FT",
-          "elapsed": 10,
+          "elapsed": 90,
           "extra": null
         }
       },
