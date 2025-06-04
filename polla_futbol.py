@@ -54,7 +54,50 @@ class PollaFutbol:
         return participants
 
     def get_match_details(self, match_id):
-        """Obtiene los detalles de un partido específico usando la API de football o un mock en modo desarrollo"""
+        # Si se fuerza el error, intentar cargar el respaldo local
+        if os.getenv('FORCE_API_ERROR', 'false').lower() == 'true':
+            print('[LOG] Forzando error 503 en la API de football por FORCE_API_ERROR, intentando cargar respaldo api_football_response.json')
+            try:
+                with open('api_football_response.json', 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                if data.get('response'):
+                    match = data['response'][0]
+                    home_team = match['teams']['home']['name']
+                    away_team = match['teams']['away']['name']
+                    home_logo = match['teams']['home']['logo']
+                    away_logo = match['teams']['away']['logo']
+                    league_logo = match['league']['logo']
+                    goals_home = match['goals']['home'] if match['goals']['home'] is not None else 0
+                    goals_away = match['goals']['away'] if match['goals']['away'] is not None else 0
+                    halftime_home = match['score']['halftime']['home'] if match['score']['halftime']['home'] is not None else 0
+                    halftime_away = match['score']['halftime']['away'] if match['score']['halftime']['away'] is not None else 0
+                    second_half_home = goals_home - halftime_home
+                    second_half_away = goals_away - halftime_away
+                    if match['fixture']['status']['short'] in ['NS', 'TBD', 'PST', 'CANC', 'SUSP', 'INT', 'ABD', 'AWD', 'WO']:
+                        winner = 'pending'
+                    elif goals_home > goals_away:
+                        winner = 'home'
+                    elif goals_home < goals_away:
+                        winner = 'away'
+                    else:
+                        winner = 'draw'
+                    return {
+                        'home_team': home_team,
+                        'away_team': away_team,
+                        'home_logo': home_logo,
+                        'away_logo': away_logo,
+                        'league_logo': league_logo,
+                        'final_score': f"{goals_home}-{goals_away}",
+                        'first_half_score': f"{halftime_home}-{halftime_away}",
+                        'second_half_score': f"{second_half_home}-{second_half_away}",
+                        'winner': winner,
+                        'venue': match['fixture']['venue'],
+                        'status': match['fixture']['status']
+                    }
+            except Exception as e:
+                print(f"[LOG] Error cargando api_football_response.json como respaldo: {e}")
+            return None
+
         develop_mode_raw = os.getenv('develop_mode', 'FALSE')
         develop_mode = develop_mode_raw.upper() == 'TRUE'
         save_json_raw = os.getenv('SAVE_JSON', 'FALSE')
@@ -118,6 +161,7 @@ class PollaFutbol:
                 'id': match_id
             }
             response = requests.get(url, headers=self.headers, params=params)
+
             if response.status_code == 200:
                 data = response.json()
                 # Guardar la respuesta cruda de la API solo si SAVE_JSON=TRUE

@@ -27,16 +27,22 @@ def get_resultados():
     print("[LOG] Refrescando datos de /resultados (no cache)")
     match_id = int(os.getenv('MATCH_ID'))
     print(f"[LOG] MATCH_ID usado: {match_id}")
-    match_data = get_match_data_with_log(match_id)
+    polla = PollaFutbol(id_polla=int(os.getenv('ID_POLLA', 1)))
+    try:
+        match_data = polla.get_match_details(match_id)
+    except Exception as e:
+        print(f"[LOG] Excepción al obtener datos del partido: {e}")
+        return jsonify({
+            "error": "No se pudo obtener la información del partido. Intente nuevamente en unos minutos."
+        }), 503
     print(f"[LOG] match_data recibido: {match_data}")
-    
+
     if not match_data:
         print("[LOG] No se pudo obtener la información del partido (match_data es None o vacío)")
         return jsonify({
             "error": "No se pudo obtener la información del partido. Intente nuevamente en unos minutos."
         }), 503
 
-    polla = PollaFutbol(id_polla=int(os.getenv('ID_POLLA', 1)))
     results = polla.process_match(match_id, match_data=match_data)
     print(f"[LOG] results calculados: {results}")
 
@@ -174,7 +180,7 @@ def get_cached_partido_info():
         'league': match.get('league', {}),
         'teams': match.get('teams', {})
     }
-    cache.set(cache_key, result, timeout=86400)
+    cache.set(cache_key, result, timeout=172800)
     return result
 
 def puede_registrar_o_actualizar():
