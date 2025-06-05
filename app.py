@@ -16,7 +16,7 @@ load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
-cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache', 'CACHE_DEFAULT_TIMEOUT': 300})  # 5 minutos
+cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache', 'CACHE_DEFAULT_TIMEOUT': 100})  # 5 minutos
 api_call_count = 0
 
 PREDICCION_MINUTOS_LIMITE = int(os.environ.get('PREDICCION_MINUTOS_LIMITE', 5))
